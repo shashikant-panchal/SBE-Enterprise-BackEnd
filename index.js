@@ -23,6 +23,11 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const { connectDB, isDbConnected } = require('./config/db');
+
+// Connect to MongoDB
+connectDB();
+
 // Root Route: SBE enterprise in running in prod message as requested
 app.get('/', (req, res) => {
   res.status(200).send('SBE enterprise in running in prod');
@@ -33,6 +38,7 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'ok',
     message: 'SBE enterprise in running in prod',
+    database: isDbConnected() ? 'connected' : 'disconnected',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
   });

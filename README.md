@@ -63,12 +63,30 @@ Server starts on `http://localhost:5000`.
 This repository includes a pre-configured `vercel.json` for zero-config serverless deployment on Vercel:
 
 1. Import this repository in [Vercel Dashboard](https://vercel.com/new).
-2. Framework Preset: **Other** (Root directory: `./`).
-3. Set Environment Variables (Optional):
+2. Framework Preset: **Other** (Root directory: `./backend`).
+3. Set Environment Variables:
+   - `MONGO_URI`: `mongodb+srv://nitinguttedar2000_db_user:hZbIDZU5FY3htIND@cluster0.f7a5bfy.mongodb.net/sbe_enterprise?retryWrites=true&w=majority`
+   - `MONGO_URL`: Same as `MONGO_URI`
    - `JWT_SECRET`: Your custom JWT signing secret (defaults to secure fallback).
-   - `PORT`: `5000`
+   - `PORT`: `5001`
 4. Click **Deploy**.
 5. Once deployed, visiting your Vercel URL will display: `SBE enterprise in running in prod`.
+6. Visiting `/api/health` will return status `ok` and `database: "connected"`.
+
+---
+
+## 🗄️ MongoDB Database & Data Persistence
+
+The backend connects to MongoDB Atlas using **Mongoose**:
+- **Connection String**: `mongodb+srv://nitinguttedar2000_db_user:hZbIDZU5FY3htIND@cluster0.f7a5bfy.mongodb.net/sbe_enterprise?retryWrites=true&w=majority`
+- **Database Name**: `sbe_enterprise`
+- **Automatic Seeding**: On the initial connection, if MongoDB collections are empty, the backend automatically seeds:
+  - 6 initial client companies (TVS, Hector Beverages, South Bottlers, AutoTech, LogiHub, Metagalli)
+  - 12 workforce employee profiles
+  - Admin credentials for `sbeadmin@gmail.com`
+  - Today's shift attendance roll call
+  - Inbound commercial proposals
+- **Graceful Fallback**: If the database is cold-starting or connecting, the backend transparently falls back to the in-memory data store to prevent downtime.
 
 ---
 
@@ -128,25 +146,25 @@ Content-Type: application/json
 | `GET` | `/api/employees` | Search and filter workers (`?search=`, `?clientCompany=`, `?role=`, `?status=`) |
 | `GET` | `/api/employees/stats` | Workforce deployment statistics (Headcount, State distribution, Shift quotas) |
 | `GET` | `/api/employees/:id` | Get single worker details |
-| `POST` | `/api/employees` | Enroll a new industrial worker into roster |
-| `PUT` | `/api/employees/:id` | Update worker info or toggle status (`Active` / `In Reserve`) |
-| `DELETE` | `/api/employees/:id` | Remove worker record |
+| `POST` | `/api/employees` | Enroll new worker into SBE roster |
+| `PUT` | `/api/employees/:id` | Update worker profile / status |
+| `DELETE` | `/api/employees/:id` | Remove worker from active roster |
 
 ---
 
-### 4. Shift Roll-Call & Attendance (`/api/attendance`)
+### 4. Live Attendance & Shift Roll-Call (`/api/attendance`)
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `GET` | `/api/attendance` | Today's shift punch-in status for all active workers |
-| `POST` | `/api/attendance/toggle` | Toggle worker status (`Present` ⇄ `Absent` ⇄ `Shift Swapped`) |
-| `POST` | `/api/attendance/set` | Set explicit status (`empId`, `status`) |
+| `GET` | `/api/attendance` | Current day shift attendance roll call |
+| `POST` | `/api/attendance/toggle` | Toggle worker attendance (`Present` ↔ `Absent` ↔ `Shift Swapped`) |
+| `POST` | `/api/attendance/set` | Set explicit worker attendance status |
 
 ---
 
-### 5. Proposals & Inbound Requisitions (`/api/proposals`)
+### 5. Manpower Proposals & Requisitions (`/api/proposals`)
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `GET` | `/api/proposals` | List all incoming commercial proposals & estimator requests |
+| `GET` | `/api/proposals` | View all inbound commercial manpower requests |
 | `POST` | `/api/proposals` | Submit new inquiry from Contact Page or Manpower Estimator |
 | `PUT` | `/api/proposals/:id` | Update status (`Under Review`, `Approved`, `Dispatched`) |
 
@@ -165,10 +183,18 @@ Content-Type: application/json
 
 ```text
 backend/
+├── config/
+│   └── db.js                 # MongoDB connection & caching with Mongoose
 ├── data/
 │   └── store.js              # In-memory database singleton with initial seed data
 ├── middleware/
 │   └── authMiddleware.js     # JWT verification & role authorization
+├── models/
+│   ├── Admin.js              # Admin credentials Mongoose model
+│   ├── Attendance.js         # Daily attendance Mongoose model
+│   ├── Client.js             # Client company Mongoose model
+│   ├── Employee.js           # Workforce worker Mongoose model
+│   └── Proposal.js           # Requisition proposal Mongoose model
 ├── routes/
 │   ├── authRoutes.js         # Admin & Client HR authentication
 │   ├── clientRoutes.js       # Client plant management & strong password generation
@@ -177,7 +203,10 @@ backend/
 │   ├── proposalRoutes.js     # Inbound manpower requests & proposals
 │   └── reportRoutes.js       # Billing timesheets & statutory compliance
 ├── utils/
-│   └── passwordGenerator.js  # Cryptographically secure password generator
+│   ├── passwordGenerator.js  # Cryptographically secure password generator
+│   └── seedData.js           # Automatic MongoDB seeder from initial data
+├── .env                      # Environment variables (gitignored)
+├── .env.example              # Template environment variables
 ├── index.js                  # Main Express entry point with Vercel export
 ├── package.json              # Backend dependencies & scripts
 ├── vercel.json               # Vercel serverless deployment routing
