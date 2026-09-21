@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const store = require('../data/store');
 const Employee = require('../models/Employee');
 const { isDbConnected } = require('../config/db');
@@ -138,7 +139,11 @@ router.get('/stats', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     if (isDbConnected()) {
-      const employee = await Employee.findOne({ id: req.params.id });
+      const query = mongoose.Types.ObjectId.isValid(req.params.id)
+        ? { $or: [{ id: req.params.id }, { _id: req.params.id }] }
+        : { id: req.params.id };
+
+      const employee = await Employee.findOne(query);
       if (!employee) {
         return res.status(404).json({ success: false, error: 'Employee not found.' });
       }
@@ -236,8 +241,12 @@ router.put('/:id', async (req, res) => {
     const updatedStore = store.updateEmployee(req.params.id, req.body);
 
     if (isDbConnected()) {
+      const query = mongoose.Types.ObjectId.isValid(req.params.id)
+        ? { $or: [{ id: req.params.id }, { _id: req.params.id }] }
+        : { id: req.params.id };
+
       const updatedDb = await Employee.findOneAndUpdate(
-        { id: req.params.id },
+        query,
         { $set: req.body },
         { new: true }
       );
@@ -274,7 +283,11 @@ router.delete('/:id', async (req, res) => {
     const storeSuccess = store.deleteEmployee(req.params.id);
 
     if (isDbConnected()) {
-      const deleted = await Employee.findOneAndDelete({ id: req.params.id });
+      const query = mongoose.Types.ObjectId.isValid(req.params.id)
+        ? { $or: [{ id: req.params.id }, { _id: req.params.id }] }
+        : { id: req.params.id };
+
+      const deleted = await Employee.findOneAndDelete(query);
       if (!deleted && !storeSuccess) {
         return res.status(404).json({ success: false, error: 'Employee not found.' });
       }

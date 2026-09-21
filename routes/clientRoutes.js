@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const store = require('../data/store');
 const Client = require('../models/Client');
 const { isDbConnected } = require('../config/db');
@@ -40,7 +41,11 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     if (isDbConnected()) {
-      const client = await Client.findOne({ id: req.params.id });
+      const query = mongoose.Types.ObjectId.isValid(req.params.id)
+        ? { $or: [{ id: req.params.id }, { _id: req.params.id }] }
+        : { id: req.params.id };
+
+      const client = await Client.findOne(query);
       if (!client) {
         return res.status(404).json({ success: false, error: 'Client company not found.' });
       }
@@ -166,8 +171,12 @@ router.put('/:id', async (req, res) => {
     const updatedStore = store.updateClient(req.params.id, req.body);
 
     if (isDbConnected()) {
+      const query = mongoose.Types.ObjectId.isValid(req.params.id)
+        ? { $or: [{ id: req.params.id }, { _id: req.params.id }] }
+        : { id: req.params.id };
+
       const updatedDb = await Client.findOneAndUpdate(
-        { id: req.params.id },
+        query,
         { $set: req.body },
         { new: true }
       );
@@ -204,7 +213,11 @@ router.delete('/:id', async (req, res) => {
     const storeSuccess = store.deleteClient(req.params.id);
 
     if (isDbConnected()) {
-      const deleted = await Client.findOneAndDelete({ id: req.params.id });
+      const query = mongoose.Types.ObjectId.isValid(req.params.id)
+        ? { $or: [{ id: req.params.id }, { _id: req.params.id }] }
+        : { id: req.params.id };
+
+      const deleted = await Client.findOneAndDelete(query);
       if (!deleted && !storeSuccess) {
         return res.status(404).json({ success: false, error: 'Client company not found.' });
       }
@@ -237,8 +250,12 @@ router.post('/:id/regenerate-password', async (req, res) => {
     const updatedStore = store.updateClient(req.params.id, { password: newPassword });
 
     if (isDbConnected()) {
+      const query = mongoose.Types.ObjectId.isValid(req.params.id)
+        ? { $or: [{ id: req.params.id }, { _id: req.params.id }] }
+        : { id: req.params.id };
+
       const updatedDb = await Client.findOneAndUpdate(
-        { id: req.params.id },
+        query,
         { password: newPassword },
         { new: true }
       );
