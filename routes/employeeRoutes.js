@@ -171,25 +171,42 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    const newEmpInStore = store.addEmployee(req.body);
-
     if (isDbConnected()) {
+      // Determine sequential ID from MongoDB
+      const lastEmp = await Employee.findOne().sort({ createdAt: -1 });
+      let nextId = 'BE-0101';
+      if (lastEmp && lastEmp.id && /^BE-\d+$/.test(lastEmp.id)) {
+        const num = parseInt(lastEmp.id.replace('BE-', ''), 10);
+        nextId = `BE-${String(num + 1).padStart(4, '0')}`;
+      } else {
+        const count = await Employee.countDocuments();
+        nextId = `BE-${String(count + 101).padStart(4, '0')}`;
+      }
+
+      const assignedId = req.body.id || nextId;
+
       const newDbEmp = await Employee.create({
-        id: newEmpInStore.id,
-        name: newEmpInStore.name,
-        role: newEmpInStore.role,
-        nativeState: newEmpInStore.nativeState,
-        nativeDistrict: newEmpInStore.nativeDistrict,
-        clientCompany: newEmpInStore.clientCompany,
-        clientLocation: newEmpInStore.clientLocation,
-        shift: newEmpInStore.shift,
-        phone: newEmpInStore.phone,
-        aadhaarVerified: newEmpInStore.aadhaarVerified,
-        medicalFitnessValid: newEmpInStore.medicalFitnessValid,
-        status: newEmpInStore.status,
-        experienceYears: newEmpInStore.experienceYears,
-        dailyWageRate: 550,
+        id: assignedId,
+        name: req.body.name.trim(),
+        photo: req.body.photo || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+        role: req.body.role || 'Assembly Line Operator',
+        nativeState: req.body.nativeState || 'Karnataka',
+        nativeDistrict: req.body.nativeDistrict || 'Mysore',
+        clientCompany: req.body.clientCompany || 'Reserve Pool / Hot Standby',
+        clientLocation: req.body.clientLocation || 'Mysore',
+        shift: req.body.shift || 'Shift A (06:00 - 14:00)',
+        joiningDate: req.body.joiningDate || new Date().toISOString().slice(0, 10),
+        phone: req.body.phone,
+        aadhaarVerified: req.body.aadhaarVerified !== undefined ? !!req.body.aadhaarVerified : true,
+        medicalFitnessValid: req.body.medicalFitnessValid !== undefined ? !!req.body.medicalFitnessValid : true,
+        status: req.body.status || 'Active',
+        experienceYears: Number(req.body.experienceYears) || 1,
+        supervisorName: req.body.supervisorName || 'Site Supervisor',
+        dailyWageRate: Number(req.body.dailyWageRate) || 550,
       });
+
+      // Keep in-memory store synchronized as fallback
+      store.addEmployee(newDbEmp.toObject ? newDbEmp.toObject() : newDbEmp);
 
       return res.status(201).json({
         success: true,
@@ -198,6 +215,7 @@ router.post('/', async (req, res) => {
       });
     }
 
+    const newEmpInStore = store.addEmployee(req.body);
     res.status(201).json({
       success: true,
       message: 'Worker enrolled successfully into SBE roster.',
@@ -205,7 +223,7 @@ router.post('/', async (req, res) => {
     });
   } catch (error) {
     console.error('Error adding employee:', error);
-    res.status(500).json({ success: false, error: 'Failed to enroll worker.' });
+    res.status(500).json({ success: false, error: error.message || 'Failed to enroll worker.' });
   }
 });
 

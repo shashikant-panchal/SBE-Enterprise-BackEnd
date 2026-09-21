@@ -46,24 +46,36 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    const newPropInStore = store.addProposal(req.body);
-
     if (isDbConnected()) {
+      const lastProp = await Proposal.findOne().sort({ createdAt: -1 });
+      let nextId = 'prop-01';
+      if (lastProp && lastProp.id && /^prop-\d+$/.test(lastProp.id)) {
+        const num = parseInt(lastProp.id.replace('prop-', ''), 10);
+        nextId = `prop-${String(num + 1).padStart(2, '0')}`;
+      } else {
+        const count = await Proposal.countDocuments();
+        nextId = `prop-${String(count + 1).padStart(2, '0')}`;
+      }
+
+      const assignedId = req.body.id || nextId;
+
       const newDbProp = await Proposal.create({
-        id: newPropInStore.id,
-        companyName: newPropInStore.companyName,
-        contactName: newPropInStore.contactName,
-        email: newPropInStore.email,
-        phone: newPropInStore.phone,
-        location: newPropInStore.location,
-        industry: newPropInStore.industry,
-        manpowerCount: newPropInStore.manpowerCount,
-        roleRequirement: newPropInStore.roleRequirement,
-        shiftsRequired: newPropInStore.shiftsRequired,
-        notes: newPropInStore.notes,
-        status: newPropInStore.status || 'New',
-        submittedAt: new Date(newPropInStore.submittedAt),
+        id: assignedId,
+        companyName: req.body.companyName.trim(),
+        contactName: req.body.contactName.trim(),
+        email: req.body.email || '',
+        phone: req.body.phone.trim(),
+        location: req.body.location || 'Mysore',
+        industry: req.body.industry || 'General Industrial',
+        manpowerCount: Number(req.body.manpowerCount) || 10,
+        roleRequirement: req.body.roleRequirement || 'General Helpers',
+        shiftsRequired: req.body.shiftsRequired || 'Shift A',
+        notes: req.body.notes || '',
+        status: req.body.status || 'New',
+        submittedAt: new Date(),
       });
+
+      store.addProposal(newDbProp.toObject ? newDbProp.toObject() : newDbProp);
 
       return res.status(201).json({
         success: true,
@@ -72,6 +84,8 @@ router.post('/', async (req, res) => {
       });
     }
 
+    const newPropInStore = store.addProposal(req.body);
+
     res.status(201).json({
       success: true,
       message: 'Proposal request submitted successfully. SBE desk will respond within 24 hours.',
@@ -79,7 +93,7 @@ router.post('/', async (req, res) => {
     });
   } catch (error) {
     console.error('Error adding proposal:', error);
-    res.status(500).json({ success: false, error: 'Failed to submit proposal request.' });
+    res.status(500).json({ success: false, error: error.message || 'Failed to submit proposal request.' });
   }
 });
 

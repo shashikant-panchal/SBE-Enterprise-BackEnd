@@ -89,6 +89,46 @@ router.post('/', async (req, res) => {
     : generateStrongPassword(16);
 
   try {
+    if (isDbConnected()) {
+      const lastCli = await Client.findOne().sort({ createdAt: -1 });
+      let nextId = 'cli-01';
+      if (lastCli && lastCli.id && /^cli-\d+$/.test(lastCli.id)) {
+        const num = parseInt(lastCli.id.replace('cli-', ''), 10);
+        nextId = `cli-${String(num + 1).padStart(2, '0')}`;
+      } else {
+        const count = await Client.countDocuments();
+        nextId = `cli-${String(count + 1).padStart(2, '0')}`;
+      }
+
+      const assignedId = req.body.id || nextId;
+
+      const dbClient = await Client.create({
+        id: assignedId,
+        name: name.trim(),
+        industry: industry || 'General Industrial',
+        location: location || 'Mysore Industrial Belt',
+        assignedWorkers: Number(assignedWorkers) || 0,
+        activeShifts: activeShifts || ['Shift A (06:00 - 14:00)'],
+        contactPerson: contactPerson.trim(),
+        contactEmail: contactEmail || `hr@${name.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`,
+        contactPhone: contactPhone || '+91 94800 00000',
+        contractStatus: contractStatus || 'Active',
+        logoPlaceholder: (name || 'PLANT').slice(0, 6).toUpperCase(),
+        deploymentSince: new Date().getFullYear().toString(),
+        password: securePassword,
+      });
+
+      // Keep in-memory store synchronized as fallback
+      store.addClient(dbClient.toObject ? dbClient.toObject() : dbClient);
+
+      return res.status(201).json({
+        success: true,
+        message: 'Client company registered successfully in database.',
+        client: dbClient,
+        generatedPassword: securePassword,
+      });
+    }
+
     const clientData = {
       name,
       industry,
@@ -102,33 +142,7 @@ router.post('/', async (req, res) => {
       password: securePassword,
     };
 
-    // Keep store updated
     const newClientInStore = store.addClient(clientData);
-
-    if (isDbConnected()) {
-      const dbClient = await Client.create({
-        id: newClientInStore.id,
-        name: newClientInStore.name,
-        industry: newClientInStore.industry,
-        location: newClientInStore.location,
-        assignedWorkers: newClientInStore.assignedWorkers,
-        activeShifts: newClientInStore.activeShifts,
-        contactPerson: newClientInStore.contactPerson,
-        contactEmail: newClientInStore.contactEmail,
-        contactPhone: newClientInStore.contactPhone,
-        contractStatus: newClientInStore.contractStatus,
-        logoPlaceholder: newClientInStore.logoPlaceholder,
-        deploymentSince: newClientInStore.deploymentSince,
-        password: securePassword,
-      });
-
-      return res.status(201).json({
-        success: true,
-        message: 'Client company registered successfully in database.',
-        client: dbClient,
-        generatedPassword: securePassword,
-      });
-    }
 
     res.status(201).json({
       success: true,
@@ -138,7 +152,7 @@ router.post('/', async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating client:', error);
-    res.status(500).json({ success: false, error: 'Failed to create client company.' });
+    res.status(500).json({ success: false, error: error.message || 'Failed to create client company.' });
   }
 });
 

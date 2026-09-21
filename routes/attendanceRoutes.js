@@ -55,9 +55,9 @@ router.get('/', async (req, res) => {
  * Toggle attendance status for a worker
  */
 router.post('/toggle', async (req, res) => {
-  const { empId } = req.body;
+  const empId = req.body.empId || req.body.employeeId || req.body.id;
   if (!empId) {
-    return res.status(400).json({ success: false, error: 'empId is required.' });
+    return res.status(400).json({ success: false, error: 'empId or employeeId is required.' });
   }
 
   const today = new Date().toISOString().slice(0, 10);
@@ -103,7 +103,8 @@ router.post('/toggle', async (req, res) => {
  * Set specific status for a worker
  */
 router.post('/set', async (req, res) => {
-  const { empId, status } = req.body;
+  const empId = req.body.empId || req.body.employeeId || req.body.id;
+  const status = req.body.status;
   if (!empId || !status) {
     return res.status(400).json({ success: false, error: 'empId and status are required.' });
   }

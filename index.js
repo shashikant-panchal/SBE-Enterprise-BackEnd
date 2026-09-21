@@ -23,10 +23,17 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const { connectDB, isDbConnected } = require('./config/db');
+const { connectDB, isDbConnected, getLastConnectionError } = require('./config/db');
 
-// Connect to MongoDB
-connectDB();
+// Ensure MongoDB is connected for every incoming request (critical for Vercel serverless)
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+  } catch (err) {
+    console.error('[Middleware] DB connection error:', err.message);
+  }
+  next();
+});
 
 // Root Route: SBE enterprise in running in prod message as requested
 app.get('/', (req, res) => {
@@ -35,10 +42,15 @@ app.get('/', (req, res) => {
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
+  const mongoose = require('mongoose');
+  const readyState = mongoose.connection.readyState;
+  const stateMap = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
   res.status(200).json({
     status: 'ok',
     message: 'SBE enterprise in running in prod',
-    database: isDbConnected() ? 'connected' : 'disconnected',
+    database: stateMap[readyState] || 'unknown',
+    readyState,
+    error: getLastConnectionError(),
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
   });

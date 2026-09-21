@@ -55,6 +55,18 @@ const employeeSchema = new mongoose.Schema(
       enum: ['Active', 'In Reserve', 'On Leave'],
       default: 'Active',
     },
+    photo: {
+      type: String,
+      default: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    },
+    joiningDate: {
+      type: String,
+      default: () => new Date().toISOString().slice(0, 10),
+    },
+    supervisorName: {
+      type: String,
+      default: 'Site Supervisor',
+    },
     experienceYears: {
       type: Number,
       default: 1,
