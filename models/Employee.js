@@ -57,7 +57,7 @@ const employeeSchema = new mongoose.Schema(
     },
     photo: {
       type: String,
-      default: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+      default: 'https://cdn-icons-png.flaticon.com/512/9187/9187532.png',
     },
     joiningDate: {
       type: String,
