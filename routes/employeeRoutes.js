@@ -193,7 +193,7 @@ router.post('/', async (req, res) => {
       const newDbEmp = await Employee.create({
         id: assignedId,
         name: req.body.name.trim(),
-        photo: req.body.photo || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+        photo: req.body.photo || 'https://cdn-icons-png.flaticon.com/512/9187/9187532.png',
         role: req.body.role || 'Assembly Line Operator',
         nativeState: req.body.nativeState || 'Karnataka',
         nativeDistrict: req.body.nativeDistrict || 'Mysore',
