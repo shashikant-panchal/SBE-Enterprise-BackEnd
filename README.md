@@ -27,20 +27,17 @@ And at `/api/health`:
 
 ---
 
-## 🔐 Administrator & Client Credentials
+## 🔐 Authentication & Access Control
 
 ### Agency Administrator
-- **Admin Email**: `sbeadmin@gmail.com`
-- **Admin Password**: `SbeAdmin@123`
-- **Role**: `admin`
-- **Proprietor**: Pavan Malaiah
-- *Security Note: Any other password will be rejected with `401 Unauthorized`. Sessions remain persistent in localStorage until logged out.*
+- Secured administrator portal with role-based JWT authentication.
+- Administrator credentials are authenticated securely against backend records.
+- Unauthorized access attempts will be rejected with `401 Unauthorized`.
+- Sessions remain persistent in localStorage until explicitly logged out.
 
 ### Client HR Portal Credentials
-- Each client company added by the Admin is automatically assigned a cryptographically generated **Strong Password** (e.g. `K9#mQ2$vLp8!wZxT`), stored securely in the backend.
-- Initial Client HR Demo:
-  - **Email**: `ramesh.k@tvs-auto-assembly.in`
-  - **Company**: TVS Motor Supplier / Two-Wheeler Assembly
+- Each client company registered by the Admin is automatically assigned a cryptographically generated **Strong Password** (16 characters, uppercase, lowercase, digits, symbols), stored securely in the backend.
+- Client HR portal allows designated plant coordinators to view workforce deployment for their specific facility.
 
 ---
 
@@ -80,7 +77,7 @@ This repository includes a pre-configured `vercel.json` for zero-config serverle
 ### 1. Authentication (`/api/auth`)
 | Method | Endpoint | Description | Auth Required |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/login` | Login as Admin (`sbeadmin@gmail.com`) or Client HR | Public |
+| `POST` | `/api/auth/login` | Login as Admin or Client HR | Public |
 | `GET` | `/api/auth/me` | Retrieve current authenticated user profile | Bearer Token |
 
 #### Sample Login Request:
@@ -89,8 +86,8 @@ POST /api/auth/login
 Content-Type: application/json
 
 {
-  "email": "sbeadmin@gmail.com",
-  "password": "SbeAdmin@123"
+  "email": "user@example.com",
+  "password": "your_password"
 }
 ```
 
