@@ -31,6 +31,7 @@ async function connectDB() {
 
   try {
     const opts = {
+      dbName: 'sbe_enterprise',
       bufferCommands: false,
       serverSelectionTimeoutMS: 5000,
       connectTimeoutMS: 5000,
