@@ -179,13 +179,13 @@ router.post('/', async (req, res) => {
     if (isDbConnected()) {
       // Determine sequential ID from MongoDB
       const lastEmp = await Employee.findOne().sort({ createdAt: -1 });
-      let nextId = 'BE-0101';
+      let nextId = 'SBE-0101';
       if (lastEmp && lastEmp.id && /^BE-\d+$/.test(lastEmp.id)) {
-        const num = parseInt(lastEmp.id.replace('BE-', ''), 10);
-        nextId = `BE-${String(num + 1).padStart(4, '0')}`;
+        const num = parseInt(lastEmp.id.replace('SBE-', ''), 10);
+        nextId = `SBE-${String(num + 1).padStart(4, '0')}`;
       } else {
         const count = await Employee.countDocuments();
-        nextId = `BE-${String(count + 101).padStart(4, '0')}`;
+        nextId = `SBE-${String(count + 101).padStart(4, '0')}`;
       }
 
       const assignedId = req.body.id || nextId;
